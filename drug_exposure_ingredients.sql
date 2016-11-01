@@ -1,24 +1,50 @@
+--select * from [DEV_CDM_OPTUM_V5].dbo.#junk
 
+select top 100 
+		cr1.concept_name atc5, cr1.concept_class_id,
+		cr2.concept_name other, cr2.concept_class_id,
+		cr.relationship_id, 
+		destats.*,
+		cr.*, rel.*
+from [DEV_CDM_OPTUM_V5].dbo.#drug_exposure_stats destats
+join [DEV_CDM_OPTUM_V5].dbo.concept_relationship cr on destats.drug_concept_id = cr.concept_id_2
+join [DEV_CDM_OPTUM_V5].dbo.concept cr1 on cr.concept_id_1 = cr1.concept_id
+join [DEV_CDM_OPTUM_V5].dbo.concept cr2 on cr.concept_id_2 = cr2.concept_id
+join [DEV_CDM_OPTUM_V5].dbo.relationship rel on cr.relationship_id = rel.relationship_id
+where cr.concept_id_1 in (select concept_id from [DEV_CDM_OPTUM_V5].dbo.concept where concept_class_id like 'ATC 3%')
 
-select	de.drug_concept_id
-		,cde.concept_name drug_name
-		,count(*) exposures
-		,count(distinct person_id) patients
-		,sum(cast(refills as bigint)) refills
-		,sum(cast(quantity as bigint)) quantity
-		,sum(cast(days_supply as bigint)) days_supply
-		,count(distinct cast(person_id as varchar) + cast(provider_id as varchar)) pt_provider_count
-from [DEV_CDM_OPTUM_V5].dbo.drug_exposure de
-join [DEV_CDM_OPTUM_V5].dbo.concept cde on de.drug_concept_id = cde.concept_id and cde.invalid_reason is null
-group by drug_concept_id
-		 ,cde.concept_name
-order by 3 desc
+/*
+
+select top 1000 * from [DEV_CDM_OPTUM_V5].dbo.#drug_exposure_stats
+
+create table [DEV_CDM_OPTUM_V5].dbo.#drug_exposure_stats
+with (location = user_db, distribution = replicate)
+as (
+	select	de.drug_concept_id
+			,cde.concept_name drug_name
+			,cde.concept_class_id drug_concept_class
+			,cdt.concept_name drug_type_name
+			,count(*) exposures
+			,count(distinct person_id) patients
+			,sum(cast(refills as bigint)) refills
+			,sum(cast(quantity as bigint)) quantity
+			,sum(cast(days_supply as bigint)) days_supply
+			,count(distinct cast(person_id as varchar) + cast(provider_id as varchar)) pt_provider_count
+	from [DEV_CDM_OPTUM_V5].dbo.drug_exposure de
+	join [DEV_CDM_OPTUM_V5].dbo.concept cde on de.drug_concept_id = cde.concept_id and cde.invalid_reason is null
+	join [DEV_CDM_OPTUM_V5].dbo.concept cdt on de.drug_type_concept_id = cdt.concept_id
+	group by drug_concept_id
+			 ,cde.concept_name
+			 ,cde.concept_class_id
+			 ,cdt.concept_name
+)
+
 
 --join [DEV_CDM_OPTUM_V5].dbo.concept_relationship cr1 on ec.drug_concept_id = cr1.concept_id_1 and cr1.relationship_id = 'RxNorm - ATC'
 --join [DEV_CDM_OPTUM_V5].dbo.concept ccr1 on cr1.concept_id_2 = ccr1.concept_id and ccr1.invalid_reason is null
 
 
-/*
+
 
 select top 1000 * from [DEV_CDM_OPTUM_V5].dbo.concept
 
